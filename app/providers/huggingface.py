@@ -25,6 +25,11 @@ from app.context import estimate_tokens
 
 logger = logging.getLogger("sugar-ai")
 
+# Hugging Face tokenizers report an enormous placeholder value (commonly
+# 1e30-scale) when no real model_max_length was configured. Values below this
+# threshold are treated as real, usable context limits.
+_UNSET_MODEL_MAX_LENGTH_THRESHOLD = 1_000_000
+
 
 class HuggingFaceProvider(BaseProvider):
     """Provider running HuggingFace models locally via transformers."""
@@ -71,7 +76,10 @@ class HuggingFaceProvider(BaseProvider):
 
         model_limit = getattr(self._pipeline.tokenizer, "model_max_length", None)
         self._context_window = (
-            int(model_limit) if isinstance(model_limit, int) and model_limit < 1_000_000 else None
+            int(model_limit)
+            if isinstance(model_limit, int)
+            and 0 < model_limit < _UNSET_MODEL_MAX_LENGTH_THRESHOLD
+            else None
         )
 
         logger.info("HuggingFaceProvider loaded model: %s (quantized=%s, device=%s)",

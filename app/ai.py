@@ -146,6 +146,7 @@ class RAGAgent:
         )
         retrieval_tokens = max(
             1,
+            # Match the per-message framing overhead used by _message_tokens.
             context_budget.input_tokens - self.provider.count_tokens(empty_context_prompt) - 4,
         )
         retrieved_context = fit_text(
